@@ -1,37 +1,21 @@
 import networkx as nx
+import matplotlib.pyplot as plt
 
 def find_paths(graph, source, target, k):
-    """
-    Find up to 'k' paths between source and target nodes in the residual graph.
-    """
     return list(nx.shortest_simple_paths(graph, source, target))[:k]
 
 def find_shortest_path(paths):
-    """
-    Select the shortest path from the available paths.
-    """
     return min(paths, key=len) if paths else None
 
 def resource_allocation(graph, apps):
-    """
-    Allocate resources for distributed quantum computing applications.
-    
-    Parameters:
-    graph: NetworkX graph representing the residual graph G0
-    apps: List of applications, each as a tuple (hi, Wi, F_min, ρ)
-    
-    Returns:
-    F: Set of allocated flows
-    """
     residual_graph = graph.copy()
     F = set()
-    L = set(range(len(apps)))  # Indices of apps to be provisioned
+    L = set(range(len(apps)))
     paths = {i: [] for i in range(len(apps))}
 
-    # Populate paths for all apps
     for i, (hi, Wi, _, _) in enumerate(apps):
         for w in Wi:
-            paths[i].extend(find_paths(residual_graph, hi, w, 3))  # Find up to 3 paths
+            paths[i].extend(find_paths(residual_graph, hi, w, 3))
 
     delta = 0
     while L:
@@ -49,7 +33,7 @@ def resource_allocation(graph, apps):
             L.remove(app_idx)
         else:
             R = min(delta, min(residual_graph[u][v]['capacity'] for u, v in zip(p[:-1], p[1:])))
-            F.add((app_idx, tuple(p), R))  # Convert path list to tuple
+            F.add((app_idx, tuple(p), R))
 
             for u, v in zip(p[:-1], p[1:]):
                 residual_graph[u][v]['capacity'] -= R
@@ -58,36 +42,55 @@ def resource_allocation(graph, apps):
 
     return F
 
-# Example usage
+def visualize_network(G, apps, allocated_flows, title):
+    plt.figure(figsize=(10, 8))
+    pos = nx.spring_layout(G)
+    
+    nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=500)
+    nx.draw_networkx_labels(G, pos)
+    
+    edge_labels = nx.get_edge_attributes(G, 'capacity')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels)
+    nx.draw_networkx_edges(G, pos)
+    
+    for app_idx, path, flow in allocated_flows:
+        path_edges = list(zip(path[:-1], path[1:]))
+        nx.draw_networkx_edges(G, pos, edgelist=path_edges, 
+                             edge_color='r', width=2, alpha=0.5)
+    
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+
 if __name__ == "__main__":
-    # Create a sample graph
+
     G = nx.DiGraph()
     G.add_edge('A', 'B', capacity=10)
     G.add_edge('B', 'C', capacity=5)
     G.add_edge('A', 'C', capacity=15)
-
-    # Define applications (hi, Wi, F_min, ρ)
+    
     apps = [
-        ('A', ['C'], 3, 0.5),  # App 1
-        ('A', ['B'], 2, 0.3),  # App 2
+        ('A', ['C'], 3, 0.5),
+        ('A', ['B'], 2, 0.3),
     ]
-
+    
     allocated_flows = resource_allocation(G, apps)
-    print("Allocated Flows:", allocated_flows)
-
-    # Another example usage
+    print("Simple Network Allocated Flows:", allocated_flows)
+    visualize_network(G, apps, allocated_flows, "Simple Network Resource Allocation")
+    
     G2 = nx.DiGraph()
     G2.add_edge('X', 'Y', capacity=20)
     G2.add_edge('Y', 'Z', capacity=10)
     G2.add_edge('X', 'Z', capacity=25)
     G2.add_edge('Y', 'W', capacity=15)
     G2.add_edge('Z', 'W', capacity=10)
-
+    
     apps2 = [
-        ('X', ['W'], 5, 0.6),  # App 1: From 'X' to 'W'
-        ('X', ['Z'], 4, 0.4),  # App 2: From 'X' to 'Z'
-        ('Y', ['W'], 3, 0.5),  # App 3: From 'Y' to 'W'
+        ('X', ['W'], 5, 0.6),
+        ('X', ['Z'], 4, 0.4),
+        ('Y', ['W'], 3, 0.5),
     ]
-
+    
     allocated_flows2 = resource_allocation(G2, apps2)
-    print("Allocated Flows:", allocated_flows2)
+    print("Complex Network Allocated Flows:", allocated_flows2)
+    visualize_network(G2, apps2, allocated_flows2, "Complex Network Resource Allocation")
