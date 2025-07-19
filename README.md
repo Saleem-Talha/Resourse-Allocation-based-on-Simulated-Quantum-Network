@@ -1,4 +1,8 @@
 # Resource Allocation based on Simulated Quantum Network
+## Research Foundation  
+  This project extends the ideas from the research paper  
+  **[Resource Allocation in Quantum Networks for Distributed Quantum Computing](https://arxiv.org/pdf/2203.05844)** by exploring additional simulations and optimization techniques.
+
 
 ## Problem and Proposed Solution
 
